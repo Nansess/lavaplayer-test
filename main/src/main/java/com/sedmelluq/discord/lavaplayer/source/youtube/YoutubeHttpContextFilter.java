@@ -56,22 +56,21 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
         if (!isRepetition) {
             context.removeAttribute(ATTRIBUTE_RESET_RETRY);
         }
-
+    
         retryCounter.handleUpdate(context, isRepetition);
-
+    
         if (tokenTracker.isTokenFetchContext(context)) {
             // Used for fetching access token or visitor id, let's not recurse.
             return;
         }
-
+    
         String userAgent = context.getAttribute(ATTRIBUTE_USER_AGENT_SPECIFIED, String.class);
         if (context.getAttribute(ATTRIBUTE_USER_AGENT_SPECIFIED) != null) {
-            String visitorId = tokenTracker.updateVisitorId();
             request.setHeader("User-Agent", userAgent);
-            request.setHeader("X-Goog-Visitor-Id", visitorId);
+            updateVisitorIdIfNeeded(context, request); 
             context.removeAttribute(ATTRIBUTE_USER_AGENT_SPECIFIED);
         }
-
+    
         String accessToken = tokenTracker.getAccessToken();
         if (!DataFormatTools.isNullOrEmpty(accessToken)) {
             request.setHeader("Authorization", "Bearer " + accessToken);
@@ -80,7 +79,7 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
                 URI uri = new URIBuilder(request.getURI())
                     .setParameter("key", YoutubeConstants.INNERTUBE_ANDROID_API_KEY)
                     .build();
-
+    
                 if (request instanceof HttpRequestBase) {
                     ((HttpRequestBase) request).setURI(uri);
                 } else {
@@ -91,6 +90,19 @@ public class YoutubeHttpContextFilter implements HttpContextFilter {
             }
         }
     }
+    
+    private void updateVisitorIdIfNeeded(HttpClientContext context, HttpUriRequest request) {
+        int updateFrequency = 5; // Update visitor ID every 5 requests
+        int requestCount = retryCounter.getRetryCount(context) + 1; // Increment by 1 to account for the current request
+        if (requestCount % updateFrequency == 0) {
+            String visitorId = tokenTracker.updateVisitorId();
+            request.setHeader("X-Goog-Visitor-Id", visitorId);
+            
+            // Log when the visitor ID is refreshed
+            log.info("Visitor ID refreshed due to reaching request count threshold ({} requests).", updateFrequency);
+        }
+    }
+    
 
     @Override
     public boolean onRequestResponse(HttpClientContext context, HttpUriRequest request, HttpResponse response) {

@@ -49,11 +49,8 @@ public class YoutubeAccessTokenTracker {
     private static final String TOKEN_FETCH_CONTEXT_ATTRIBUTE = "yt-raw";
     private static final long MASTER_TOKEN_REFRESH_INTERVAL = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
-    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(4);
+    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
-    private static final int MAX_REQUESTS_BEFORE_REFRESH = 25;
-    private static final long REFRESH_WINDOW_DURATION = TimeUnit.MINUTES.toMillis(5); 
-    
     private final Object tokenLock = new Object();
     private final HttpInterfaceManager httpInterfaceManager;
     private final String email;
@@ -61,7 +58,6 @@ public class YoutubeAccessTokenTracker {
     private String masterToken;
     private String accessToken;
     private String visitorId;
-    private int requestCount = 0;
     private long lastMasterTokenUpdate;
     private long lastAccessTokenUpdate;
     private long lastVisitorIdUpdate;
@@ -157,29 +153,27 @@ public class YoutubeAccessTokenTracker {
     public String updateVisitorId() {
         synchronized (tokenLock) {
             long now = System.currentTimeMillis();
-    
-            if (now - lastVisitorIdUpdate >= VISITOR_ID_REFRESH_INTERVAL || requestCount >= 25) {
-                log.info("Refreshing YouTube visitor id...");
-    
-                try {
-                    visitorId = fetchVisitorId();
-                    lastVisitorIdUpdate = now;
-                    requestCount = 0; 
-                    log.info("YouTube visitor id refreshed successfully. New visitor id: {}. Last update: {} ({}).",
-                            visitorId,
-                            now,
-                            requestCount >= 25 ? "Request count exceeded 25." : "Time interval expired."
-                    );
-                } catch (Exception e) {
-                    log.error("Failed to refresh YouTube visitor id.", e);
-                }
-            } else {
-                log.debug("YouTube visitor id is up to date. Last update: {}.", lastVisitorIdUpdate);
+            if (now - lastVisitorIdUpdate < VISITOR_ID_REFRESH_INTERVAL) {
+                log.debug("YouTube visitor id was recently updated, not updating again right away.");
+                return visitorId;
             }
-    
+
+            lastVisitorIdUpdate = now;
+            log.info("Updating YouTube visitor id (current is {}).", visitorId);
+
+            try {
+                visitorId = fetchVisitorId();
+                log.info("Updating YouTube visitor id succeeded, new one is {}, next update will be after {} seconds.",
+                    visitorId,
+                    TimeUnit.MILLISECONDS.toSeconds(VISITOR_ID_REFRESH_INTERVAL)
+                );
+            } catch (Exception e) {
+                log.error("YouTube visitor id update failed.", e);
+            }
+
             return visitorId;
         }
-    }    
+    }
 
     public String getMasterToken() {
         synchronized (tokenLock) {
@@ -206,8 +200,6 @@ public class YoutubeAccessTokenTracker {
             if (visitorId == null) {
                 updateVisitorId();
             }
-
-            requestCount++;
 
             return visitorId;
         }
