@@ -209,6 +209,19 @@ public class YoutubeAccessTokenTracker {
         }
     }
 
+    public String updateVisitorIdForce() {
+        synchronized (tokenLock) {
+            try {
+                visitorId = fetchVisitorId();
+                log.info("Forced update of YouTube visitor id succeeded, new one is {}.", visitorId);
+                return visitorId;
+            } catch (Exception e) {
+                log.error("Forced update of YouTube visitor id failed.", e);
+                return null; 
+            }
+        }
+    }
+
     public boolean isTokenFetchContext(HttpClientContext context) {
         return context.getAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE) == Boolean.TRUE;
     }
