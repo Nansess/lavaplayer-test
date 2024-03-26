@@ -153,28 +153,17 @@ public class YoutubeAccessTokenTracker {
      */
     public String updateVisitorId() {
         synchronized (tokenLock) {
-            long now = System.currentTimeMillis();
-    
-            if (now - lastVisitorIdUpdate >= VISITOR_ID_REFRESH_INTERVAL || 
-                visitorIdRequestsSinceLastUpdate >= 15) {
-    
-                lastVisitorIdUpdate = now;
-                visitorIdRequestsSinceLastUpdate = 0; 
-                log.info("Updating YouTube visitor id (current is {}).", visitorId);
-    
+            int retries = 0;
+            while (retries < 2) {
                 try {
                     visitorId = fetchVisitorId();
-                    log.info("Updating YouTube visitor id succeeded, new one is {}, next update will be after {} seconds or 15 requests.",
-                            visitorId,
-                            TimeUnit.MILLISECONDS.toSeconds(VISITOR_ID_REFRESH_INTERVAL)
-                    );
+                    return visitorId;
                 } catch (Exception e) {
-                    log.error("YouTube visitor id update failed.", e);
+                    retries++;
+                    log.error("YouTube visitor id update failed on attempt {}. Retrying...", retries, e);
                 }
-            } else {
-                visitorIdRequestsSinceLastUpdate++; 
             }
-    
+            log.error("Maximum retries reached. Unable to update YouTube visitor id.");
             return visitorId;
         }
     }
@@ -212,7 +201,7 @@ public class YoutubeAccessTokenTracker {
     public String updateVisitorIdForce() {
         synchronized (tokenLock) {
             try {
-                visitorId = fetchVisitorId();
+                updateVisitorId(); 
                 log.info("Forced update of YouTube visitor id succeeded, new one is {}.", visitorId);
                 return visitorId;
             } catch (Exception e) {
@@ -221,6 +210,7 @@ public class YoutubeAccessTokenTracker {
             }
         }
     }
+    
 
     public boolean isTokenFetchContext(HttpClientContext context) {
         return context.getAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE) == Boolean.TRUE;
