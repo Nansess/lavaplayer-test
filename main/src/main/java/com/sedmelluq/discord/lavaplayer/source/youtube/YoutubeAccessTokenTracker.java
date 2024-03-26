@@ -147,33 +147,36 @@ public class YoutubeAccessTokenTracker {
     }
 
     /**
-     * Updates the visitor id if more than {@link #VISITOR_ID_REFRESH_INTERVAL} time has passed since last updated.
+     * Updates the visitor id for every request cause fuck why not?
      */
     public String updateVisitorId() {
-        int maxRetries = 3; 
-        int retryDelayMillis = 5000; 
-       
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            if (attempt > 1) { 
-            }
-    
-            try {
-                visitorId = fetchVisitorId();
-                return visitorId;
-            } catch (Exception e) {
-                log.error("YouTube visitor id update failed. Retrying in {}ms.", e, retryDelayMillis);
-    
+        synchronized (tokenLock) {
+            int retries = 0;
+            while (retries < 2) {
                 try {
-                    Thread.sleep(retryDelayMillis); 
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt(); 
+                    visitorId = fetchVisitorId();
+                    return visitorId;
+                } catch (Exception e) {
+                    retries++;
+                    log.error("YouTube visitor id update failed on attempt {}. Retrying...", retries, e);
                 }
-            } 
+            }
+            log.error("Maximum retries reached. Unable to update YouTube visitor id.");
+            return visitorId;
         }
+    }
     
-        log.error("YouTube visitor id update failed after {} attempts.", maxRetries); 
-        return visitorId; 
-    }            
+    
+
+    public String getMasterToken() {
+        synchronized (tokenLock) {
+            if (masterToken == null) {
+                updateMasterToken();
+            }
+
+            return masterToken;
+        }
+    }
 
     public String getAccessToken() {
         synchronized (tokenLock) {
