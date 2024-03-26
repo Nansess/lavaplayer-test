@@ -20,6 +20,9 @@ import static com.sedmelluq.discord.lavaplayer.container.Formats.MIME_AUDIO_WEBM
 import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.COMMON;
 import static com.sedmelluq.discord.lavaplayer.tools.Units.CONTENT_LENGTH_UNKNOWN;
 
+
+
+
 /**
  * Audio track that handles processing Youtube videos as audio tracks.
  */
@@ -27,6 +30,10 @@ public class YoutubeAudioTrack extends DelegatedAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(YoutubeAudioTrack.class);
 
     private final YoutubeAudioSourceManager sourceManager;
+    YoutubeAccessTokenTracker tokenTracker;
+    private static final int MAX_RETRY_COUNT = 3;
+
+
 
     /**
      * @param trackInfo     Track info
@@ -79,23 +86,39 @@ public class YoutubeAudioTrack extends DelegatedAudioTrack {
     }
 
     private FormatWithUrl loadBestFormatWithUrl(HttpInterface httpInterface) throws Exception {
-        YoutubeTrackDetails details = sourceManager.getTrackDetailsLoader()
-            .loadDetails(httpInterface, getIdentifier(), true, sourceManager);
-
-        // If the error reason is "Video unavailable" details will return null
-        if (details == null) {
+        YoutubeTrackDetails details = null;
+        List<YoutubeTrackFormat> formats = null;
+        boolean retry = true;
+        int retryCount = 0;
+    
+        while (retry) {
+            details = sourceManager.getTrackDetailsLoader().loadDetails(httpInterface, getIdentifier(), true, sourceManager);
+            
+            if (details == null || (formats = details.getFormats(httpInterface, sourceManager.getSignatureResolver())).isEmpty()) {
+                retryCount++;
+                if (retryCount > MAX_RETRY_COUNT) { 
+                    retry = false; 
+                    break;
+                }
+                log.info("Retrying with a new visitor ID (attempt {})", retryCount);
+                tokenTracker.updateVisitorIdForce();
+            } else {
+                retry = false; 
+            }
+        }
+    
+        if (details == null || formats.isEmpty()) {
             throw new FriendlyException("This video is not available", FriendlyException.Severity.COMMON, null);
         }
-
-        List<YoutubeTrackFormat> formats = details.getFormats(httpInterface, sourceManager.getSignatureResolver());
-
+    
+        log.info("Successfully loaded video details and formats after {} attempts.", retryCount);
+        
         YoutubeTrackFormat format = findBestSupportedFormat(formats);
-
-        URI signedUrl = sourceManager.getSignatureResolver()
-            .resolveFormatUrl(httpInterface, details.getPlayerScript(), format);
-
+        URI signedUrl = sourceManager.getSignatureResolver().resolveFormatUrl(httpInterface, details.getPlayerScript(), format);
+        
         return new FormatWithUrl(format, signedUrl);
-    }
+    }    
+    
 
     @Override
     protected AudioTrack makeShallowClone() {
