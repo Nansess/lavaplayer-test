@@ -155,7 +155,7 @@ public class YoutubeAccessTokenTracker {
        
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             if (attempt > 1) { 
-                log.debug("Updating YouTube visitor id (current is {}). Attempt {} of {}.", visitorId, attempt, maxRetries);
+                log.debug("Updating YouTube visitor ID (current is {}). Attempt {} of {}.", visitorId, attempt, maxRetries);
             }
     
             try {
