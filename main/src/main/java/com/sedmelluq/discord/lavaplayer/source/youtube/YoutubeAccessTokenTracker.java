@@ -49,7 +49,7 @@ public class YoutubeAccessTokenTracker {
     private static final String TOKEN_FETCH_CONTEXT_ATTRIBUTE = "yt-raw";
     private static final long MASTER_TOKEN_REFRESH_INTERVAL = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
-    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(5);
+    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toSeconds(5);
 
     private final Object tokenLock = new Object();
     private final HttpInterfaceManager httpInterfaceManager;
@@ -154,7 +154,7 @@ public class YoutubeAccessTokenTracker {
         synchronized (tokenLock) {
             long now = System.currentTimeMillis();
             if (now - lastVisitorIdUpdate < VISITOR_ID_REFRESH_INTERVAL) {
-                log.debug("YouTube visitor id was recently updated, not updating again right away.");
+                log.info("YouTube visitor id was recently updated, not updating again right away.");
                 return visitorId;
             }
 
