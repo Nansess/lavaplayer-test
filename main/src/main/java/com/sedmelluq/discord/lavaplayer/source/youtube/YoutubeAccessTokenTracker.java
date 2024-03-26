@@ -49,7 +49,6 @@ public class YoutubeAccessTokenTracker {
     private static final String TOKEN_FETCH_CONTEXT_ATTRIBUTE = "yt-raw";
     private static final long MASTER_TOKEN_REFRESH_INTERVAL = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
-    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
     private final Object tokenLock = new Object();
     private final HttpInterfaceManager httpInterfaceManager;
@@ -61,7 +60,6 @@ public class YoutubeAccessTokenTracker {
     private long lastMasterTokenUpdate;
     private long lastAccessTokenUpdate;
     private long lastVisitorIdUpdate;
-    private int visitorIdRequestsSinceLastUpdate; 
     private long accessTokenRefreshInterval = DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL;
     private boolean loggedAgeRestrictionsWarning = false;
     private boolean masterTokenFromTV = false;
@@ -152,42 +150,31 @@ public class YoutubeAccessTokenTracker {
      * Updates the visitor id if more than {@link #VISITOR_ID_REFRESH_INTERVAL} time has passed since last updated.
      */
     public String updateVisitorId() {
-        synchronized (tokenLock) {
-            long now = System.currentTimeMillis();
+        int maxRetries = 3; 
+        int retryDelayMillis = 5000; 
+       
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            if (attempt > 1) { 
+                log.debug("Updating YouTube visitor id (current is {}). Attempt {} of {}.", visitorId, attempt, maxRetries);
+            }
     
-            if (now - lastVisitorIdUpdate >= VISITOR_ID_REFRESH_INTERVAL || 
-                visitorIdRequestsSinceLastUpdate >= 15) {
-    
-                lastVisitorIdUpdate = now;
-                visitorIdRequestsSinceLastUpdate = 0; 
-                log.info("Updating YouTube visitor id (current is {}).", visitorId);
+            try {
+                visitorId = fetchVisitorId();
+                return visitorId;
+            } catch (Exception e) {
+                log.error("YouTube visitor id update failed. Retrying in {}ms.", e, retryDelayMillis);
     
                 try {
-                    visitorId = fetchVisitorId();
-                    log.info("Updating YouTube visitor id succeeded, new one is {}, next update will be after {} seconds or 15 requests.",
-                            visitorId,
-                            TimeUnit.MILLISECONDS.toSeconds(VISITOR_ID_REFRESH_INTERVAL)
-                    );
-                } catch (Exception e) {
-                    log.error("YouTube visitor id update failed.", e);
+                    Thread.sleep(retryDelayMillis); 
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt(); 
                 }
-            } else {
-                visitorIdRequestsSinceLastUpdate++; 
-            }
+            } 
+        }
     
-            return visitorId;
-        }
-    }
-
-    public String getMasterToken() {
-        synchronized (tokenLock) {
-            if (masterToken == null) {
-                updateMasterToken();
-            }
-
-            return masterToken;
-        }
-    }
+        log.error("YouTube visitor id update failed after {} attempts.", maxRetries); 
+        return visitorId; 
+    }            
 
     public String getAccessToken() {
         synchronized (tokenLock) {
@@ -206,19 +193,6 @@ public class YoutubeAccessTokenTracker {
             }
 
             return visitorId;
-        }
-    }
-
-    public String updateVisitorIdForce() {
-        synchronized (tokenLock) {
-            try {
-                visitorId = fetchVisitorId();
-                log.info("Forced update of YouTube visitor id succeeded, new one is {}.", visitorId);
-                return visitorId;
-            } catch (Exception e) {
-                log.error("Forced update of YouTube visitor id failed.", e);
-                return null; 
-            }
         }
     }
 
