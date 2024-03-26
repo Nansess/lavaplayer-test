@@ -253,11 +253,11 @@ public class YoutubeAccessTokenTracker {
 
             try (CloseableHttpResponse response = httpInterface.execute(visitorIdPost)) {
                 HttpClientTools.assertSuccessWithContent(response, "youtube visitor id");
-                log.info(response);
 
                 String responseText = EntityUtils.toString(response.getEntity());
                 JsonBrowser json = JsonBrowser.parse(responseText);
 
+                log.info(responseText);
                 return json.get("responseContext").get("visitorData").text();
             }
         }
