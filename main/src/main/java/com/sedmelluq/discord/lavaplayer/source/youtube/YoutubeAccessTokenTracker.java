@@ -256,7 +256,6 @@ public class YoutubeAccessTokenTracker {
 
                 String responseText = EntityUtils.toString(response.getEntity());
                 JsonBrowser json = JsonBrowser.parse(responseText);
-                log.info(responseText);
 
                 return json.get("responseContext").get("visitorData").text();
             }
