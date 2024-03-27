@@ -15,9 +15,9 @@ public class YoutubeConstants {
     static final String CLIENT_WEB_NAME = "WEB";
     static final String CLIENT_WEB_VERSION = "2.20220801.00.00";
 
-    static final String INNERTUBE_IOS_API_KEY = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc"
-    static final String CLIENT_IOS_NAME = "IOS"
-    static final String CLIENT_IOS_VERSION = "19.12.3" 
+    static final String INNERTUBE_IOS_API_KEY = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc";
+    static final String CLIENT_IOS_NAME = "IOS";
+    static final String CLIENT_IOS_VERSION = "19.12.3";
 
     static final String INNERTUBE_TV_API_KEY = "AIzaSyD-L7DIyuMgBk-B4DYmjJZ5UG-D6Y-vkMc";
     static final String CLIENT_TVHTML5_NAME = "TVHTML5_SIMPLY_EMBEDDED_PLAYER";
