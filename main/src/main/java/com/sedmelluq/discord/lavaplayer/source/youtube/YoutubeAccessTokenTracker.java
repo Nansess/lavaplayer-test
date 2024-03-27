@@ -49,7 +49,6 @@ public class YoutubeAccessTokenTracker {
     private static final String TOKEN_FETCH_CONTEXT_ATTRIBUTE = "yt-raw";
     private static final long MASTER_TOKEN_REFRESH_INTERVAL = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
-    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
     private final Object tokenLock = new Object();
     private final HttpInterfaceManager httpInterfaceManager;
@@ -61,7 +60,6 @@ public class YoutubeAccessTokenTracker {
     private long lastMasterTokenUpdate;
     private long lastAccessTokenUpdate;
     private long lastVisitorIdUpdate;
-    private int visitorIdRequestsSinceLastUpdate; 
     private long accessTokenRefreshInterval = DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL;
     private boolean loggedAgeRestrictionsWarning = false;
     private boolean masterTokenFromTV = false;
@@ -149,7 +147,7 @@ public class YoutubeAccessTokenTracker {
     }
 
     /**
-     * Updates the visitor id if more than {@link #VISITOR_ID_REFRESH_INTERVAL} time has passed since last updated.
+     * Updates the visitor id for every request cause fuck why not?
      */
     public String updateVisitorId() {
         synchronized (tokenLock) {
@@ -167,6 +165,8 @@ public class YoutubeAccessTokenTracker {
             return visitorId;
         }
     }
+    
+    
 
     public String getMasterToken() {
         synchronized (tokenLock) {
@@ -197,20 +197,6 @@ public class YoutubeAccessTokenTracker {
             return visitorId;
         }
     }
-
-    public String updateVisitorIdForce() {
-        synchronized (tokenLock) {
-            try {
-                updateVisitorId(); 
-                log.info("Forced update of YouTube visitor id succeeded, new one is {}.", visitorId);
-                return visitorId;
-            } catch (Exception e) {
-                log.error("Forced update of YouTube visitor id failed.", e);
-                return null; 
-            }
-        }
-    }
-    
 
     public boolean isTokenFetchContext(HttpClientContext context) {
         return context.getAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE) == Boolean.TRUE;
