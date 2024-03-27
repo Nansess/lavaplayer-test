@@ -1,5 +1,6 @@
 package com.sedmelluq.discord.lavaplayer.source.youtube;
 
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeClientConfig.AndroidVersion;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterface;
 import org.json.JSONObject;
 
@@ -8,7 +9,7 @@ import static com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeHttpContext
 import static com.sedmelluq.discord.lavaplayer.source.youtube.YoutubePayloadHelper.putOnceAndJoin;
 
 public class YoutubeClientConfig extends JSONObject {
-    public static final AndroidVersion DEFAULT_ANDROID_VERSION = AndroidVersion.ANDROID_11;
+    public static final AndroidVersion DEFAULT_ANDROID_VERSION = AndroidVersion.ANDROID_12;
 
     public static YoutubeClientConfig ANDROID = new YoutubeClientConfig()
         .withApiKey(INNERTUBE_ANDROID_API_KEY)
@@ -19,6 +20,11 @@ public class YoutubeClientConfig extends JSONObject {
         //.withClientField("osName", "Android")
         //.withClientField("osVersion", DEFAULT_ANDROID_VERSION.getOsVersion())
         .withClientDefaultScreenParameters();
+
+    public static YoutubeClientConfig IOS = new YoutubeClientConfig()
+        .withApiKey(INNERTUBE_IOS_API_KEY)
+        .withClientName(CLIENT_IOS_NAME)
+        .withClientField("clientVersion", CLIENT_IOS_VERSION);
 
     public static YoutubeClientConfig TV_EMBEDDED = new YoutubeClientConfig()
         .withApiKey(INNERTUBE_WEB_API_KEY) //.withApiKey(INNERTUBE_TV_API_KEY) // Requires header (Referer tv.youtube.com)
@@ -139,7 +145,7 @@ public class YoutubeClientConfig extends JSONObject {
 
     public enum AndroidVersion {
         // https://apilevels.com/
-        ANDROID_11("11", 30);
+        ANDROID_12("12", 31);
 
         private final String osVersion;
         private final int sdkVersion;
