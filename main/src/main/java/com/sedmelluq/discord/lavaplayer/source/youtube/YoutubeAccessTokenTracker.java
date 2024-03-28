@@ -49,7 +49,7 @@ public class YoutubeAccessTokenTracker {
     private static final String TOKEN_FETCH_CONTEXT_ATTRIBUTE = "yt-raw";
     private static final long MASTER_TOKEN_REFRESH_INTERVAL = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL = TimeUnit.HOURS.toMillis(1);
-    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(5);
+    private static final long VISITOR_ID_REFRESH_INTERVAL = TimeUnit.MINUTES.toMillis(10);
 
     private final Object tokenLock = new Object();
     private final HttpInterfaceManager httpInterfaceManager;
@@ -61,7 +61,6 @@ public class YoutubeAccessTokenTracker {
     private long lastMasterTokenUpdate;
     private long lastAccessTokenUpdate;
     private long lastVisitorIdUpdate;
-    private int visitorIdRequestsSinceLastUpdate; 
     private long accessTokenRefreshInterval = DEFAULT_ACCESS_TOKEN_REFRESH_INTERVAL;
     private boolean loggedAgeRestrictionsWarning = false;
     private boolean masterTokenFromTV = false;
@@ -154,27 +153,24 @@ public class YoutubeAccessTokenTracker {
     public String updateVisitorId() {
         synchronized (tokenLock) {
             long now = System.currentTimeMillis();
-    
-            if (now - lastVisitorIdUpdate >= VISITOR_ID_REFRESH_INTERVAL || 
-                visitorIdRequestsSinceLastUpdate >= 15) {
-    
-                lastVisitorIdUpdate = now;
-                visitorIdRequestsSinceLastUpdate = 0; 
-                log.info("Updating YouTube visitor id (current is {}).", visitorId);
-    
-                try {
-                    visitorId = fetchVisitorId();
-                    log.info("Updating YouTube visitor id succeeded, new one is {}, next update will be after {} seconds or 15 requests.",
-                            visitorId,
-                            TimeUnit.MILLISECONDS.toSeconds(VISITOR_ID_REFRESH_INTERVAL)
-                    );
-                } catch (Exception e) {
-                    log.error("YouTube visitor id update failed.", e);
-                }
-            } else {
-                visitorIdRequestsSinceLastUpdate++; 
+            if (now - lastVisitorIdUpdate < VISITOR_ID_REFRESH_INTERVAL) {
+                log.debug("YouTube visitor id was recently updated, not updating again right away.");
+                return visitorId;
             }
-    
+
+            lastVisitorIdUpdate = now;
+            log.info("Updating YouTube visitor id (current is {}).", visitorId);
+
+            try {
+                visitorId = fetchVisitorId();
+                log.info("Updating YouTube visitor id succeeded, new one is {}, next update will be after {} seconds.",
+                    visitorId,
+                    TimeUnit.MILLISECONDS.toSeconds(VISITOR_ID_REFRESH_INTERVAL)
+                );
+            } catch (Exception e) {
+                log.error("YouTube visitor id update failed.", e);
+            }
+
             return visitorId;
         }
     }
@@ -209,19 +205,6 @@ public class YoutubeAccessTokenTracker {
         }
     }
 
-    public String updateVisitorIdForce() {
-        synchronized (tokenLock) {
-            try {
-                visitorId = fetchVisitorId();
-                log.info("Forced update of YouTube visitor id succeeded, new one is {}.", visitorId);
-                return visitorId;
-            } catch (Exception e) {
-                log.error("Forced update of YouTube visitor id failed.", e);
-                return null; 
-            }
-        }
-    }
-
     public boolean isTokenFetchContext(HttpClientContext context) {
         return context.getAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE) == Boolean.TRUE;
     }
@@ -241,12 +224,12 @@ public class YoutubeAccessTokenTracker {
             return requestAccessToken(httpInterface);
         }
     }
-    // uses IOS client for visitor ID
+
     private String fetchVisitorId() throws IOException {
         try (HttpInterface httpInterface = httpInterfaceManager.getInterface()) {
             httpInterface.getContext().setAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE, true);
 
-            YoutubeClientConfig clientConfig = YoutubeClientConfig.IOS.copy().setAttribute(httpInterface);
+            YoutubeClientConfig clientConfig = YoutubeClientConfig.ANDROID.copy().setAttribute(httpInterface);
             HttpPost visitorIdPost = new HttpPost(VISITOR_ID_URL);
             StringEntity visitorIdPayload = new StringEntity(clientConfig.toJsonString(), "UTF-8");
             visitorIdPost.setEntity(visitorIdPayload);
