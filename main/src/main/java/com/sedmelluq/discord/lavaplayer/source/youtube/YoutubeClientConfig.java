@@ -145,6 +145,7 @@ public class YoutubeClientConfig extends JSONObject {
 
     public enum AndroidVersion {
         // https://apilevels.com/
+        // why 12? idk
         ANDROID_12("12", 31);
 
         private final String osVersion;

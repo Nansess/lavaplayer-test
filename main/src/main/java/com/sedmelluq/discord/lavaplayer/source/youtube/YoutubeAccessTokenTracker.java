@@ -241,7 +241,7 @@ public class YoutubeAccessTokenTracker {
             return requestAccessToken(httpInterface);
         }
     }
-
+    // uses IOS client for visitor ID
     private String fetchVisitorId() throws IOException {
         try (HttpInterface httpInterface = httpInterfaceManager.getInterface()) {
             httpInterface.getContext().setAttribute(TOKEN_FETCH_CONTEXT_ATTRIBUTE, true);
