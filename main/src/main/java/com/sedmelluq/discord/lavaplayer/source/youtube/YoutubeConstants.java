@@ -15,6 +15,7 @@ public class YoutubeConstants {
     static final String CLIENT_WEB_NAME = "WEB";
     static final String CLIENT_WEB_VERSION = "2.20220801.00.00";
 
+    // i believe this is correct
     static final String INNERTUBE_IOS_API_KEY = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc";
     static final String CLIENT_IOS_NAME = "IOS";
     static final String CLIENT_IOS_VERSION = "19.12.3";
