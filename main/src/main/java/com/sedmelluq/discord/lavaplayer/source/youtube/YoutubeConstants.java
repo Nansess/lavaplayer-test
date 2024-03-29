@@ -6,6 +6,9 @@ public class YoutubeConstants {
     static final String YOUTUBE_ORIGIN = "https://www.youtube.com";
     static final String YOUTUBE_API_ORIGIN = "https://youtubei.googleapis.com";
     static final String BASE_URL = YOUTUBE_API_ORIGIN + "/youtubei/v1";
+    // useless test
+    static final String INNERTUBE_ANDROID_EMBEDDED_PLAYER_API_KEY = "AIzaSyCjc_pVEDi4qsv5MtC2dMXzpIaDoRFLsxw";
+    static final String CLIENT_ANDROID_EMBEDDED_PLAYER_NAME = "ANDROID_EMBEDDED_PLAYER";
 
     static final String INNERTUBE_ANDROID_API_KEY = "AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
     static final String CLIENT_ANDROID_NAME = "ANDROID";

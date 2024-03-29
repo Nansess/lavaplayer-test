@@ -21,6 +21,15 @@ public class YoutubeClientConfig extends JSONObject {
         //.withClientField("osVersion", DEFAULT_ANDROID_VERSION.getOsVersion())
         .withClientDefaultScreenParameters();
 
+    public static YoutubeClientConfig ANDROID_EMBEDDED_PLAYER = new YoutubeClientConfig()
+        .withApiKey(INNERTUBE_ANDROID_EMBEDDED_PLAYER_API_KEY)
+        .withUserAgent(String.format("com.google.android.youtube/%s (Linux; U; Android %s) gzip", CLIENT_ANDROID_VERSION, DEFAULT_ANDROID_VERSION.getOsVersion()))
+        .withClientName(CLIENT_ANDROID_EMBEDDED_PLAYER_NAME)
+        .withClientField("clientVersion", CLIENT_ANDROID_VERSION)
+        .withClientField("androidSdkVersion", DEFAULT_ANDROID_VERSION.getSdkVersion())
+        .withThirdPartyEmbedUrl(CLIENT_THIRD_PARTY_EMBED)
+        .withClientDefaultScreenParameters();
+
     public static YoutubeClientConfig IOS = new YoutubeClientConfig()
         .withApiKey(INNERTUBE_IOS_API_KEY)
         .withClientName(CLIENT_IOS_NAME)

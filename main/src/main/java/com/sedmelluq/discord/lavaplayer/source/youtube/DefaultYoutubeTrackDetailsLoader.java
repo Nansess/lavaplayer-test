@@ -1,5 +1,7 @@
 package com.sedmelluq.discord.lavaplayer.source.youtube;
 
+import com.sedmelluq.discord.lavaplayer.source.youtube.DefaultYoutubeTrackDetailsLoader.CachedPlayerScript;
+import com.sedmelluq.discord.lavaplayer.source.youtube.DefaultYoutubeTrackDetailsLoader.InfoStatus;
 import com.sedmelluq.discord.lavaplayer.tools.DataFormatTools;
 import com.sedmelluq.discord.lavaplayer.tools.ExceptionTools;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
@@ -220,7 +222,7 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
             clientConfig = YoutubeClientConfig.TV_EMBEDDED.copy();
         } else {
             // Default payload from what we start trying to get required data
-            clientConfig = YoutubeClientConfig.ANDROID.copy()
+            clientConfig = YoutubeClientConfig.ANDROID_EMBEDDED_PLAYER.copy()
                 .withClientField("clientScreen", CLIENT_SCREEN_EMBED)
                 .withThirdPartyEmbedUrl(CLIENT_THIRD_PARTY_EMBED)
                 .withRootField("params", PLAYER_PARAMS);
