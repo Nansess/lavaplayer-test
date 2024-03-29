@@ -29,7 +29,7 @@ public class YoutubeConstants {
     static final String PLAYER_PARAMS = "CgIQBg";
     static final String SEARCH_PARAMS = "EgIQAUICCAE=";
 
-    static final String SEARCH_URL = BASE_URL + "/search?key=" + INNERTUBE_IOS_API_KEY;
+    static final String SEARCH_URL = BASE_URL + "/search?key=" + INNERTUBE_ANDROID_API_KEY;
     static final String PLAYER_URL = BASE_URL + "/player";
     static final String BROWSE_URL = BASE_URL + "/browse";
     static final String NEXT_URL = BASE_URL + "/next";
