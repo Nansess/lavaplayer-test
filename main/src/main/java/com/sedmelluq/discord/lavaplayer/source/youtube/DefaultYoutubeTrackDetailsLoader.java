@@ -220,7 +220,7 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
             clientConfig = YoutubeClientConfig.TV_EMBEDDED.copy();
         } else {
             // Default payload from what we start trying to get required data
-            clientConfig = YoutubeClientConfig.WEB.copy()
+            clientConfig = YoutubeClientConfig.ANDROID.copy()
                 .withClientField("clientScreen", CLIENT_SCREEN_EMBED)
                 .withThirdPartyEmbedUrl(CLIENT_THIRD_PARTY_EMBED)
                 .withRootField("params", PLAYER_PARAMS);
