@@ -15,74 +15,74 @@ import java.util.Map;
 import static com.sedmelluq.discord.lavaplayer.tools.DataFormatTools.decodeUrlEncodedItems;
 
 public class LegacyStreamMapFormatsExtractor implements OfflineYoutubeTrackFormatExtractor {
-    private static final Logger log = LoggerFactory.getLogger(LegacyStreamMapFormatsExtractor.class);
+  private static final Logger log = LoggerFactory.getLogger(LegacyStreamMapFormatsExtractor.class);
 
-    @Override
-    public List<YoutubeTrackFormat> extract(YoutubeTrackJsonData data) {
-        String formatStreamMap = data.polymerArguments.get("url_encoded_fmt_stream_map").text();
+  @Override
+  public List<YoutubeTrackFormat> extract(YoutubeTrackJsonData data) {
+    String formatStreamMap = data.polymerArguments.get("url_encoded_fmt_stream_map").text();
 
-        if (formatStreamMap == null) {
-            return Collections.emptyList();
-        }
-
-        return loadTrackFormatsFromFormatStreamMap(formatStreamMap);
+    if (formatStreamMap == null) {
+      return Collections.emptyList();
     }
 
-    private List<YoutubeTrackFormat> loadTrackFormatsFromFormatStreamMap(String adaptiveFormats) {
-        List<YoutubeTrackFormat> tracks = new ArrayList<>();
-        boolean anyFailures = false;
+    return loadTrackFormatsFromFormatStreamMap(formatStreamMap);
+  }
 
-        for (String formatString : adaptiveFormats.split(",")) {
-            try {
-                Map<String, String> format = decodeUrlEncodedItems(formatString, false);
-                String url = format.get("url");
+  private List<YoutubeTrackFormat> loadTrackFormatsFromFormatStreamMap(String adaptiveFormats) {
+    List<YoutubeTrackFormat> tracks = new ArrayList<>();
+    boolean anyFailures = false;
 
-                if (url == null) {
-                    continue;
-                }
+    for (String formatString : adaptiveFormats.split(",")) {
+      try {
+        Map<String, String> format = decodeUrlEncodedItems(formatString, false);
+        String url = format.get("url");
 
-                String contentLength = DataFormatTools.extractBetween(url, "clen=", "&");
-
-                if (contentLength == null) {
-                    log.debug("Could not find content length from URL {}, skipping format", url);
-                    continue;
-                }
-
-                tracks.add(new YoutubeTrackFormat(
-                    ContentType.parse(format.get("type")),
-                    qualityToBitrateValue(format.get("quality")),
-                    Long.parseLong(contentLength),
-                    2,
-                    url,
-                    "",
-                    format.get("s"),
-                    format.getOrDefault("sp", DEFAULT_SIGNATURE_KEY),
-                    true
-                ));
-            } catch (RuntimeException e) {
-                anyFailures = true;
-                log.debug("Failed to parse format {}, skipping.", formatString, e);
-            }
+        if (url == null) {
+          continue;
         }
 
-        if (tracks.isEmpty() && anyFailures) {
-            log.warn("In adaptive format map {}, all formats either failed to load or were skipped due to missing fields",
-                adaptiveFormats);
+        String contentLength = DataFormatTools.extractBetween(url, "clen=", "&");
+
+        if (contentLength == null) {
+          log.debug("Could not find content length from URL {}, skipping format", url);
+          continue;
         }
 
-        return tracks;
+        tracks.add(new YoutubeTrackFormat(
+            ContentType.parse(format.get("type")),
+            qualityToBitrateValue(format.get("quality")),
+            Long.parseLong(contentLength),
+            2,
+            url,
+            "",
+            format.get("s"),
+            format.getOrDefault("sp", DEFAULT_SIGNATURE_KEY),
+            true
+        ));
+      } catch (RuntimeException e) {
+        anyFailures = true;
+        log.debug("Failed to parse format {}, skipping.", formatString, e);
+      }
     }
 
-    private long qualityToBitrateValue(String quality) {
-        // Return negative bitrate values to indicate missing bitrate info, but still retain the relative order.
-        if ("small".equals(quality)) {
-            return -10;
-        } else if ("medium".equals(quality)) {
-            return -5;
-        } else if ("hd720".equals(quality)) {
-            return -4;
-        } else {
-            return -1;
-        }
+    if (tracks.isEmpty() && anyFailures) {
+      log.warn("In adaptive format map {}, all formats either failed to load or were skipped due to missing fields",
+          adaptiveFormats);
     }
+
+    return tracks;
+  }
+
+  private long qualityToBitrateValue(String quality) {
+    // Return negative bitrate values to indicate missing bitrate info, but still retain the relative order.
+    if ("small".equals(quality)) {
+      return -10;
+    } else if ("medium".equals(quality)) {
+      return -5;
+    } else if ("hd720".equals(quality)) {
+      return -4;
+    } else {
+      return -1;
+    }
+  }
 }

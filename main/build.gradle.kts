@@ -19,6 +19,8 @@ dependencies {
     implementation(libs.jaadec.fork)
     implementation(libs.rhino.engine)
     implementation(libs.slf4j)
+    implementation("com.grack:nanojson:1.7")
+
 
     api(libs.httpclient)
     implementation(libs.commons.io)
