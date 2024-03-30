@@ -2,6 +2,7 @@ package com.sedmelluq.discord.lavaplayer.source.soundcloud;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager.Builder.PlaylistLoaderFactory;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.JsonBrowser;
 import com.sedmelluq.discord.lavaplayer.tools.io.HttpClientTools;
@@ -399,13 +400,19 @@ public class SoundCloudAudioSourceManager implements AudioSourceManager, HttpCon
     List<AudioTrack> tracks = new ArrayList<>();
 
     for (JsonBrowser item : searchResults.get("collection").values()) {
-      if (!item.isNull()) {
-        tracks.add(loadFromTrackData(item));
-      }
+        if (!item.isNull()) {
+            SoundCloudTrackFormat format = formatHandler.chooseBestFormat(dataReader.readTrackFormats(item));
+            AudioTrackInfo trackInfo = dataReader.readTrackInfo(item, formatHandler.buildFormatIdentifier(format));
+
+            if (!((SoundcloudAudioTrackInfo) trackInfo).snipped && !"SUB_HIGH_TIER".equals(((SoundcloudAudioTrackInfo) trackInfo).monetizationModel)) {
+              tracks.add(buildTrackFromInfo(trackInfo));
+          }     
+        }
     }
 
     return new BasicAudioPlaylist("Search results for: " + query, tracks, null, true);
-  }
+}
+
 
   public static class Builder {
     private boolean allowSearch = true;
