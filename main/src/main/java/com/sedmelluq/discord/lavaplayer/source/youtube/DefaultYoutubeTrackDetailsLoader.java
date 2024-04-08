@@ -231,14 +231,14 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
     YoutubeClientConfig config = clientOverride;
 
     if (config == null) {
-      if (infoStatus == InfoStatus.PREMIERE_TRAILER) { 
+      if (infoStatus == InfoStatus.PREMIERE_TRAILER) { // Base64 protobuf response, requires WEB
         config = YoutubeClientConfig.WEB.copy();
-      } else if (infoStatus == InfoStatus.NON_EMBEDDABLE) { 
+      } else if (infoStatus == InfoStatus.NON_EMBEDDABLE) { // When age restriction bypass fails, this request should succeed if we have valid auth.
         config = YoutubeClientConfig.ANDROID.copy()
             .withRootField("params", YoutubeConstants.PLAYER_PARAMS);
-      } else if (infoStatus == InfoStatus.REQUIRES_LOGIN) { 
+      } else if (infoStatus == InfoStatus.REQUIRES_LOGIN) { // Age restriction, requires TV_EMBEDDED
         config = YoutubeClientConfig.TV_EMBEDDED.copy();
-      } else { 
+      } else { // Default payload from what we start trying to get required data
         config = YoutubeClientConfig.ANDROID.copy()
             .withClientField("clientScreen", "EMBED")
             .withThirdPartyEmbedUrl("https://google.com")
