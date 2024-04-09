@@ -9,7 +9,7 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class YoutubeClientConfig {
     // 28-Feb-2024: https://github.com/yt-dlp/yt-dlp/pull/9317
-    public static final String MOBILE_CLIENT_VERSION = "18.11.34"; // 19.07.39
+    public static final String MOBILE_CLIENT_VERSION = "19.07.39"; // 19.07.39
     public static final AndroidVersion DEFAULT_ANDROID_VERSION = AndroidVersion.ANDROID_11;
 
     // Clients
