@@ -239,7 +239,7 @@ public class DefaultYoutubeTrackDetailsLoader implements YoutubeTrackDetailsLoad
       } else if (infoStatus == InfoStatus.REQUIRES_LOGIN) { // Age restriction, requires TV_EMBEDDED
         config = YoutubeClientConfig.TV_EMBEDDED.copy();
       } else { // Default payload from what we start trying to get required data
-        config = YoutubeClientConfig.ANDROID.copy()
+        config = YoutubeClientConfig.WEB.copy()
             .withClientField("clientScreen", "EMBED")
             .withThirdPartyEmbedUrl("https://google.com")
             .withRootField("params", YoutubeConstants.PLAYER_PARAMS);
