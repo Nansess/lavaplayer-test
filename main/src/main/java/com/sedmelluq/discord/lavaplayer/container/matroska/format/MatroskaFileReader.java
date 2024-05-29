@@ -200,14 +200,18 @@ public class MatroskaFileReader {
      * @throws IOException On read error
      */
     public void skip(MatroskaElement element) throws IOException {
-        long remaining = element.getRemaining(inputStream.getPosition());
-
+        long currentPosition = inputStream.getPosition();
+        long remaining = element.getRemaining(currentPosition);
+    
         if (remaining > 0) {
             inputStream.skipFully(remaining);
+            if (inputStream.getPosition() - currentPosition < remaining) {
+                skip(element);
+            }
         } else if (remaining < 0) {
             throw new IllegalStateException("Current position is beyond this element");
         }
-    }
+    }    
 
     /**
      * @return Returns the current absolute position of the file.
