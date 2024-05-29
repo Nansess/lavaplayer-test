@@ -34,32 +34,55 @@ public class MatroskaFileReader {
      * @throws IOException On read error
      */
     public MatroskaElement readNextElement(MatroskaElement parent) throws IOException {
-        long position = inputStream.getPosition();
-        long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
-
-        if (remaining == 0) {
-            return null;
-        } else if (remaining < 0) {
-            throw new IllegalStateException("Current position is beyond this element");
+        while (true) {
+            long position = inputStream.getPosition();
+            long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
+    
+            if (remaining <= 0) {
+                if (remaining < 0) {
+                    throw new IllegalStateException("Current position is beyond this element. Position: " + position + ", Remaining: " + remaining);
+                }
+                return null;
+            }
+    
+            try {
+                long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+                long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+                long dataPosition = inputStream.getPosition();
+    
+                if (dataSize > remaining) {
+                    throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
+                }
+    
+                int level = parent == null ? 0 : parent.getLevel() + 1;
+                MutableMatroskaElement element = levels[level];
+    
+                if (element == null) {
+                    element = levels[level] = new MutableMatroskaElement(level);
+                }
+    
+                element.setId(id);
+                element.setType(MatroskaElementType.find(id));
+                element.setPosition(position);
+                element.setHeaderSize((int) (dataPosition - position));
+                element.setDataSize((int) dataSize);
+    
+                if (element.getDataSize() < 0) {
+                    throw new IOException("Invalid data size read for the element: " + element.getDataSize());
+                }
+    
+                return element;
+            } catch (IOException e) {
+                // Skip to the next element
+                skipToNextElement();
+            }
         }
-
-        long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-        long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-        long dataPosition = inputStream.getPosition();
-
-        int level = parent == null ? 0 : parent.getLevel() + 1;
-        MutableMatroskaElement element = levels[level];
-
-        if (element == null) {
-            element = levels[level] = new MutableMatroskaElement(level);
-        }
-
-        element.setId(id);
-        element.setType(MatroskaElementType.find(id));
-        element.setPosition(position);
-        element.setHeaderSize((int) (dataPosition - position));
-        element.setDataSize((int) dataSize);
-        return element;
+    }
+    
+    private void skipToNextElement() throws IOException {
+        // Skip a number of bytes to attempt to recover from a read error
+        long skipBytes = 1; // skips one byte
+        inputStream.skip(skipBytes);
     }
 
     /**
