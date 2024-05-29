@@ -40,30 +40,46 @@ public class MatroskaFileReader {
     public MatroskaElement readNextElement(MatroskaElement parent) throws IOException {
         long position = inputStream.getPosition();
         long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
-
-        if (remaining == 0) {
+    
+        if (remaining <= 0) {
+            // Log a message instead of throwing an exception for end of file
+            log.info("End of file reached. Remaining bytes: {}", remaining);
             return null;
-        } else if (remaining < 0) {
-            log.info("Current position is beyond this element. Position: {}", position);
-            throw new IllegalStateException("Current position is beyond this element");
         }
-
+    
         long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
         long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
         long dataPosition = inputStream.getPosition();
-
+    
+        if (dataSize < 0) {
+            // Log a warning and skip the element if dataSize is negative
+            log.warn("Skipping element due to negative dataSize: {}", dataSize);
+            inputStream.seek(inputStream.getPosition() + remaining); // Move input stream position to skip the rest of the element
+            return null;
+        }
+    
+        // Check if the dataSize exceeds remaining bytes
+        if (dataSize > remaining) {
+            log.error("DataSize exceeds remaining bytes. Position: {}, Remaining: {}, DataSize: {}", position, remaining, dataSize);
+            throw new IllegalStateException("DataSize exceeds remaining bytes");
+        }
+    
         int level = parent == null ? 0 : parent.getLevel() + 1;
         MutableMatroskaElement element = levels[level];
-
+    
         if (element == null) {
             element = levels[level] = new MutableMatroskaElement(level);
         }
-
+    
         element.setId(id);
         element.setType(MatroskaElementType.find(id));
         element.setPosition(position);
         element.setHeaderSize((int) (dataPosition - position));
         element.setDataSize((int) dataSize);
+    
+        // Move the input stream position to the end of the element
+        inputStream.seek(inputStream.getPosition() + dataSize);
+    
         return element;
     }
 
