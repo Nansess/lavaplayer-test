@@ -34,67 +34,49 @@ public class MatroskaFileReader {
      * @throws IOException On read error
      */
     public MatroskaElement readNextElement(MatroskaElement parent) throws IOException {
-        while (true) {
-            long position = inputStream.getPosition();
-            long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
+        long position = inputStream.getPosition();
+        long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
     
-            if (remaining <= 0) {
-                if (remaining < 0) {
-                    throw new IllegalStateException("Current position is beyond this element. Position: " + position + ", Remaining: " + remaining);
-                }
-                return null;
+        if (remaining == 0) {
+            return null;
+        } else if (remaining < 0) {
+            throw new IllegalStateException("Current position is beyond this element");
+        }
+    
+        long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+        long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+        
+        if (dataSize == 0) {
+            skipBytes(dataSize);
+            return readNextElement(parent);
+        }
+    
+        long dataPosition = inputStream.getPosition();
+    
+        int level = parent == null ? 0 : parent.getLevel() + 1;
+        MutableMatroskaElement element = levels[level];
+    
+        if (element == null) {
+            element = levels[level] = new MutableMatroskaElement(level);
+        }
+    
+        element.setId(id);
+        element.setType(MatroskaElementType.find(id));
+        element.setPosition(position);
+        element.setHeaderSize((int) (dataPosition - position));
+        element.setDataSize((int) dataSize);
+        return element;
+    }
+    
+    private void skipBytes(long bytesToSkip) throws IOException {
+        while (bytesToSkip > 0) {
+            long skipped = inputStream.skip(Math.min(bytesToSkip, Integer.MAX_VALUE));
+            if (skipped <= 0) {
+                throw new IOException("Failed to skip bytes");
             }
-    
-            try {
-                long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-                long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-    
-                // Check for invalid data size
-                if (dataSize < 0) {
-                    throw new IOException("Invalid data size read for the element: " + dataSize);
-                }
-    
-                long dataPosition = inputStream.getPosition();
-    
-                if (dataSize > remaining) {
-                    throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
-                }
-    
-                int level = parent == null ? 0 : parent.getLevel() + 1;
-                MutableMatroskaElement element = levels[level];
-    
-                if (element == null) {
-                    element = levels[level] = new MutableMatroskaElement(level);
-                }
-    
-                element.setId(id);
-                element.setType(MatroskaElementType.find(id));
-                element.setPosition(position);
-                element.setHeaderSize((int) (dataPosition - position));
-                element.setDataSize((int) dataSize);
-    
-                if (parent != null && parent.getLevel() >= element.getLevel()) {
-                    skipToNextElement();
-                    continue;
-                }
-    
-                if (position == 0 && !element.getType().equals(MatroskaElementType.SEGMENT)) {
-                    throw new IOException("Segment not the second element in the file: was " + element.getType() + " instead");
-                }
-    
-                return element;
-            } catch (IOException e) {
-                skipToNextElement();
-            }
+            bytesToSkip -= skipped;
         }
     }
-    
-    private void skipToNextElement() throws IOException {
-        // Skip a number of bytes to attempt to recover from a read error
-        long skipBytes = 1; 
-        inputStream.skip(skipBytes);
-    }
-    
 
     /**
      * Reads one Matroska block header. The data is of the block is not read, but can be read frame by frame using
