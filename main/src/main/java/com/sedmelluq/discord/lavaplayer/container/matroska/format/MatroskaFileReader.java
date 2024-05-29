@@ -49,6 +49,7 @@ public class MatroskaFileReader {
                 long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
                 long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
     
+                // Check for invalid data size
                 if (dataSize < 0) {
                     throw new IOException("Invalid data size read for the element: " + dataSize);
                 }
@@ -72,15 +73,17 @@ public class MatroskaFileReader {
                 element.setHeaderSize((int) (dataPosition - position));
                 element.setDataSize((int) dataSize);
     
-                // Check if parent level is greater than or equal to the next element's level
                 if (parent != null && parent.getLevel() >= element.getLevel()) {
                     skipToNextElement();
                     continue;
                 }
     
+                if (position == 0 && !element.getType().equals(MatroskaElementType.SEGMENT)) {
+                    throw new IOException("Segment not the second element in the file: was " + element.getType() + " instead");
+                }
+    
                 return element;
             } catch (IOException e) {
-                // Skip to the next element in case of any IO error
                 skipToNextElement();
             }
         }
