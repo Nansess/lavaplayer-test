@@ -53,14 +53,14 @@ public class MatroskaFileReader {
     
         if (dataSize < 0) {
             // Log a warning and skip the element if dataSize is negative
-            log.warn("Skipping element due to negative dataSize: {}", dataSize);
+            log.info("Skipping element due to negative dataSize: {}", dataSize);
             inputStream.seek(inputStream.getPosition() + remaining); // Move input stream position to skip the rest of the element
             return null;
         }
     
         // Check if the dataSize exceeds remaining bytes
         if (dataSize > remaining) {
-            log.error("DataSize exceeds remaining bytes. Position: {}, Remaining: {}, DataSize: {}", position, remaining, dataSize);
+            log.info("DataSize exceeds remaining bytes. Position: {}, Remaining: {}, DataSize: {}", position, remaining, dataSize);
             throw new IllegalStateException("DataSize exceeds remaining bytes");
         }
     
