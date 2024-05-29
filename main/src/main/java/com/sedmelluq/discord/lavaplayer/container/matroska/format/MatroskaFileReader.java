@@ -6,6 +6,8 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles reading of elements and their content from an MKV file.
@@ -15,6 +17,8 @@ public class MatroskaFileReader {
     private final DataInput dataInput;
     private final MutableMatroskaElement[] levels;
     private final MutableMatroskaBlock mutableBlock;
+    private static final Logger log = LoggerFactory.getLogger(MatroskaFileReader.class);
+
 
     /**
      * @param inputStream Input stream to read from.
@@ -36,46 +40,31 @@ public class MatroskaFileReader {
     public MatroskaElement readNextElement(MatroskaElement parent) throws IOException {
         long position = inputStream.getPosition();
         long remaining = parent != null ? parent.getRemaining(position) : inputStream.getContentLength() - position;
-    
+
         if (remaining == 0) {
             return null;
         } else if (remaining < 0) {
+            log.info("Current position is beyond this element. Position: {}", position);
             throw new IllegalStateException("Current position is beyond this element");
         }
-    
+
         long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
         long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-        
-        if (dataSize == 0) {
-            skipBytes(dataSize);
-            return readNextElement(parent);
-        }
-    
         long dataPosition = inputStream.getPosition();
-    
+
         int level = parent == null ? 0 : parent.getLevel() + 1;
         MutableMatroskaElement element = levels[level];
-    
+
         if (element == null) {
             element = levels[level] = new MutableMatroskaElement(level);
         }
-    
+
         element.setId(id);
         element.setType(MatroskaElementType.find(id));
         element.setPosition(position);
         element.setHeaderSize((int) (dataPosition - position));
         element.setDataSize((int) dataSize);
         return element;
-    }
-    
-    private void skipBytes(long bytesToSkip) throws IOException {
-        while (bytesToSkip > 0) {
-            long skipped = inputStream.skip(Math.min(bytesToSkip, Integer.MAX_VALUE));
-            if (skipped <= 0) {
-                throw new IOException("Failed to skip bytes");
-            }
-            bytesToSkip -= skipped;
-        }
     }
 
     /**
@@ -200,18 +189,14 @@ public class MatroskaFileReader {
      * @throws IOException On read error
      */
     public void skip(MatroskaElement element) throws IOException {
-        long currentPosition = inputStream.getPosition();
-        long remaining = element.getRemaining(currentPosition);
-    
+        long remaining = element.getRemaining(inputStream.getPosition());
+
         if (remaining > 0) {
             inputStream.skipFully(remaining);
-            if (inputStream.getPosition() - currentPosition < remaining) {
-                skip(element);
-            }
         } else if (remaining < 0) {
             throw new IllegalStateException("Current position is beyond this element");
         }
-    }    
+    }
 
     /**
      * @return Returns the current absolute position of the file.
