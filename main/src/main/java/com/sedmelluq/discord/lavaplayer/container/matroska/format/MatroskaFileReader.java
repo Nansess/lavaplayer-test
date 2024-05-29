@@ -45,38 +45,44 @@ public class MatroskaFileReader {
                 return null;
             }
     
-            long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-            long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-            long dataPosition = inputStream.getPosition();
+            try {
+                long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+                long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
     
-            if (dataSize > remaining) {
-                throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
-            }
+                if (dataSize < 0) {
+                    throw new IOException("Invalid data size read for the element: " + dataSize);
+                }
     
-            int level = parent == null ? 0 : parent.getLevel() + 1;
-            MutableMatroskaElement element = levels[level];
+                long dataPosition = inputStream.getPosition();
     
-            if (element == null) {
-                element = levels[level] = new MutableMatroskaElement(level);
-            }
+                if (dataSize > remaining) {
+                    throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
+                }
     
-            element.setId(id);
-            element.setType(MatroskaElementType.find(id));
-            element.setPosition(position);
-            element.setHeaderSize((int) (dataPosition - position));
-            element.setDataSize((int) dataSize);
+                int level = parent == null ? 0 : parent.getLevel() + 1;
+                MutableMatroskaElement element = levels[level];
     
-            if (element.getDataSize() < 0) {
-                throw new IOException("Invalid data size read for the element: " + element.getDataSize());
-            }
+                if (element == null) {
+                    element = levels[level] = new MutableMatroskaElement(level);
+                }
     
-            // Check if parent level is greater than or equal to the next element's level
-            if (parent != null && parent.getLevel() >= element.getLevel()) {
+                element.setId(id);
+                element.setType(MatroskaElementType.find(id));
+                element.setPosition(position);
+                element.setHeaderSize((int) (dataPosition - position));
+                element.setDataSize((int) dataSize);
+    
+                // Check if parent level is greater than or equal to the next element's level
+                if (parent != null && parent.getLevel() >= element.getLevel()) {
+                    skipToNextElement();
+                    continue;
+                }
+    
+                return element;
+            } catch (IOException e) {
+                // Skip to the next element in case of any IO error
                 skipToNextElement();
-                continue; 
             }
-    
-            return element;
         }
     }
     
