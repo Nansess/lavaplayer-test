@@ -45,45 +45,47 @@ public class MatroskaFileReader {
                 return null;
             }
     
-            try {
-                long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-                long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
-                long dataPosition = inputStream.getPosition();
+            long id = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+            long dataSize = MatroskaEbmlReader.readEbmlInteger(dataInput, null);
+            long dataPosition = inputStream.getPosition();
     
-                if (dataSize > remaining) {
-                    throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
-                }
-    
-                int level = parent == null ? 0 : parent.getLevel() + 1;
-                MutableMatroskaElement element = levels[level];
-    
-                if (element == null) {
-                    element = levels[level] = new MutableMatroskaElement(level);
-                }
-    
-                element.setId(id);
-                element.setType(MatroskaElementType.find(id));
-                element.setPosition(position);
-                element.setHeaderSize((int) (dataPosition - position));
-                element.setDataSize((int) dataSize);
-    
-                if (element.getDataSize() < 0) {
-                    throw new IOException("Invalid data size read for the element: " + element.getDataSize());
-                }
-    
-                return element;
-            } catch (IOException e) {
-                // Skip to the next element
-                skipToNextElement();
+            if (dataSize > remaining) {
+                throw new IOException("Data size (" + dataSize + ") exceeds the remaining bytes (" + remaining + ") of the parent element.");
             }
+    
+            int level = parent == null ? 0 : parent.getLevel() + 1;
+            MutableMatroskaElement element = levels[level];
+    
+            if (element == null) {
+                element = levels[level] = new MutableMatroskaElement(level);
+            }
+    
+            element.setId(id);
+            element.setType(MatroskaElementType.find(id));
+            element.setPosition(position);
+            element.setHeaderSize((int) (dataPosition - position));
+            element.setDataSize((int) dataSize);
+    
+            if (element.getDataSize() < 0) {
+                throw new IOException("Invalid data size read for the element: " + element.getDataSize());
+            }
+    
+            // Check if parent level is greater than or equal to the next element's level
+            if (parent != null && parent.getLevel() >= element.getLevel()) {
+                skipToNextElement();
+                continue; 
+            }
+    
+            return element;
         }
     }
     
     private void skipToNextElement() throws IOException {
         // Skip a number of bytes to attempt to recover from a read error
-        long skipBytes = 1; // skips one byte
+        long skipBytes = 1; 
         inputStream.skip(skipBytes);
     }
+    
 
     /**
      * Reads one Matroska block header. The data is of the block is not read, but can be read frame by frame using
