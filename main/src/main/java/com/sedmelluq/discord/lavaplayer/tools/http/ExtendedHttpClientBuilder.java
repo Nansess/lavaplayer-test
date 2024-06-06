@@ -129,7 +129,7 @@ public class ExtendedHttpClientBuilder extends HttpClientBuilder {
             TimeUnit.MILLISECONDS
         );
 
-        manager.setMaxTotal(3000);
+        manager.setMaxTotal(9000);
         manager.setDefaultMaxPerRoute(1500);
 
         return manager;
