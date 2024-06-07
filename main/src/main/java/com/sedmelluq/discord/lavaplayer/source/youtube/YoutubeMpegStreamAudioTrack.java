@@ -34,7 +34,7 @@ import static com.sedmelluq.discord.lavaplayer.tools.Units.CONTENT_LENGTH_UNKNOW
  */
 public class YoutubeMpegStreamAudioTrack extends MpegAudioTrack {
     private static final Logger log = LoggerFactory.getLogger(YoutubeMpegStreamAudioTrack.class);
-    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setSocketTimeout(9000).setConnectionRequestTimeout(9000).setConnectTimeout(9000).build();
+    private static final RequestConfig streamingRequestConfig = RequestConfig.custom().setSocketTimeout(15000).setConnectionRequestTimeout(15000).setConnectTimeout(15000).build();
     private static final long EMPTY_RETRY_THRESHOLD_MS = 400;
     private static final long EMPTY_RETRY_INTERVAL_MS = 50;
     private static final long MAX_REWIND_TIME = 43200; // Seconds
