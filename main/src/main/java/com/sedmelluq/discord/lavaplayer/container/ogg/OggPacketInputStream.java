@@ -98,14 +98,17 @@ public class OggPacketInputStream extends InputStream {
     private boolean readPageHeader() throws IOException {
         if (!checkNextBytes(inputStream, OGG_PAGE_HEADER, false)) {
             if (inputStream.read() == -1) {
+                // We reached the end of the stream, no more page headers to read.
                 return false;
             }
 
+            // If the stream is not at the end but doesn't have the expected page header, throw an exception.
             throw new IllegalStateException("Stream is not positioned at a page header.");
         } else if ((dataInput.readByte() & 0xFF) != 0) {
             throw new IllegalStateException("Unknown OGG stream version.");
         }
 
+        // The rest of the method stays unchanged
         int flags = dataInput.readByte() & 0xFF;
         long position = Long.reverseBytes(dataInput.readLong());
         int streamIdentifier = Integer.reverseBytes(dataInput.readInt());
