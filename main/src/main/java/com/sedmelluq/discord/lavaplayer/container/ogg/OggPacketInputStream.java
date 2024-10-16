@@ -96,35 +96,44 @@ public class OggPacketInputStream extends InputStream {
     }
 
     private boolean readPageHeader() throws IOException {
-        if (!checkNextBytes(inputStream, OGG_PAGE_HEADER, false)) {
-            if (inputStream.read() == -1) {
-                // We reached the end of the stream, no more page headers to read.
-                return false;
+        try {
+            if (!checkNextBytes(inputStream, OGG_PAGE_HEADER, false)) {
+                if (inputStream.read() == -1) {
+                    // Gracefully handle the end of the stream.
+                    return false;
+                }
+                // No page header found, throw an exception.
+                throw new IllegalStateException("Stream is not positioned at a page header.");
+            } else if ((dataInput.readByte() & 0xFF) != 0) {
+                throw new IllegalStateException("Unknown OGG stream version.");
             }
 
-            // If the stream is not at the end but doesn't have the expected page header, throw an exception.
-            throw new IllegalStateException("Stream is not positioned at a page header.");
-        } else if ((dataInput.readByte() & 0xFF) != 0) {
-            throw new IllegalStateException("Unknown OGG stream version.");
+            // Rest of the header parsing logic
+            int flags = dataInput.readByte() & 0xFF;
+            long position = Long.reverseBytes(dataInput.readLong());
+            int streamIdentifier = Integer.reverseBytes(dataInput.readInt());
+            int pageSequence = Integer.reverseBytes(dataInput.readInt());
+            int checksum = Integer.reverseBytes(dataInput.readInt());
+            int segmentCount = dataInput.readByte() & 0xFF;
+            long byteStreamPosition = inputStream.getPosition() - 27;
+
+            pageHeader = new OggPageHeader(flags, position, streamIdentifier, pageSequence, checksum, segmentCount,
+                byteStreamPosition);
+
+            for (int i = 0; i < segmentCount; i++) {
+                segmentSizes[i] = dataInput.readByte() & 0xFF;
+            }
+
+            return true;
+
+        } catch (IllegalStateException e) {
+            // If we're at the end of the stream, treat it as a graceful exit
+            if (inputStream.read() == -1) {
+                return false;
+            }
+            // Otherwise, rethrow the exception
+            throw e;
         }
-
-        // The rest of the method stays unchanged
-        int flags = dataInput.readByte() & 0xFF;
-        long position = Long.reverseBytes(dataInput.readLong());
-        int streamIdentifier = Integer.reverseBytes(dataInput.readInt());
-        int pageSequence = Integer.reverseBytes(dataInput.readInt());
-        int checksum = Integer.reverseBytes(dataInput.readInt());
-        int segmentCount = dataInput.readByte() & 0xFF;
-        long byteStreamPosition = inputStream.getPosition() - 27;
-
-        pageHeader = new OggPageHeader(flags, position, streamIdentifier, pageSequence, checksum, segmentCount,
-            byteStreamPosition);
-
-        for (int i = 0; i < segmentCount; i++) {
-            segmentSizes[i] = dataInput.readByte() & 0xFF;
-        }
-
-        return true;
     }
 
     /**
